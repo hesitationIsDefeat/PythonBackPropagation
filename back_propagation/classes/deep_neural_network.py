@@ -98,7 +98,7 @@ class DeepNeuralNetwork:
             for neuron in reversed(hidden_layer):
                 gradient_descend_vector = np.append(gradient_descend_vector, neuron.get_gradient_vector())
 
-        self._gradient_descend = gradient_descend_vector
+        self._gradient_descend += gradient_descend_vector
 
     # After the gradient descend is obtained, updates the parameters of every neuron
     def update_every_neuron_parameters(self):
