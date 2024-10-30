@@ -8,8 +8,8 @@ class Neuron:
         self._act_func_name = act_func_name
         self._bias = np.random.randn()
         self._connections = [] if connections is None else connections
-        self._weights: np.array = np.random.randn(len(self._connections))
-        self._parameter_size = len(connections) + 1
+        self._weights: np.array = [] if connections is None else np.random.randn(len(self._connections))
+        self._parameter_size = 0 if connections is None else len(connections) + 1
 
         self._pre_activation_value = None
         self._activation_value = None
