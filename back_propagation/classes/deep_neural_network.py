@@ -7,9 +7,15 @@ from back_propagation.enums import ActivationFunctionName, LossFunctionName
 
 
 class DeepNeuralNetwork:
-    def __init__(self, input_layer_size, hidden_layer_info, output_layer_size,
+    def __init__(self, hidden_layer_info, training_data_x, training_data_y,
                  activation_function_name=ActivationFunctionName.SIGMOID,
                  loss_func_name=LossFunctionName.DIFFERENCE_SQUARE):
+        self._training_data_x = training_data_x
+        self._training_data_y = training_data_y
+
+        input_layer_size = len(training_data_x[0])
+        output_layer_size = len(training_data_y[0])
+
         gradient_index = 0
 
         # Create input layers
@@ -71,7 +77,7 @@ class DeepNeuralNetwork:
 
 
     def calculate_loss_value(self, expected_values):
-        loss_sum = 0
+        loss_sum = 0.0
         for neuron, expected_value in zip(self._output_layer, expected_values):
             loss_sum += self.loss_func(neuron.activation_value, expected_value)
         return loss_sum
@@ -109,10 +115,32 @@ class DeepNeuralNetwork:
         for neuron in self._output_layer:
             self.update_neuron_parameters(neuron)
 
+
+
     # Set the input data as the activation value of the input neurons
     def set_input_data(self, input_values):
         for neuron, input_value in zip(self._input_layer, input_values):
             neuron.set_input_neuron_activation(input_value)
+
+    # Assuming the connections are made
+    def start_back_propagation(self):
+        aimed_loss_value = 1/100
+        iteration_limit = 100
+        iteration_index = 0
+        while self._loss_value is None or self._loss_value > aimed_loss_value:
+            if iteration_index >= iteration_limit:
+                print(f"Reached iteration limit of {iteration_limit}, current loss value is {self._loss_value}, aimed loss value was {aimed_loss_value}")
+            print(f"Starting iteration {iteration_index}")
+            for training_data, expected_result in zip(self._training_data_x, self._training_data_y):
+                self.set_input_data(training_data)
+                self.calculate_activation_values()
+                self._loss_value += self.calculate_loss_value(expected_result)
+
+            self._loss_value /= len(self._training_data_x)
+            print(f"Current loss value is {self._loss_value}")
+            self.calculate_gradient_descend()
+            self.update_every_neuron_parameters()
+
 
 
 
