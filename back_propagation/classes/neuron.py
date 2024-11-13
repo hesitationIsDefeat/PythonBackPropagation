@@ -59,7 +59,9 @@ class Neuron:
         return self._parameter_size
 
     def create_connections(self, connections: list['Neuron']):
-        self._connections: connections
+        self._connections = connections
+        self._weights = np.random.randn(len(connections))
+        self._parameter_size = len(connections) + 1
 
     def set_input_neuron_activation(self, activation_value):
         self._activation_value = activation_value
@@ -97,8 +99,8 @@ class Neuron:
         self._pre_activation_value = pre_activation_value
         self._activation_value =  self.act_func(pre_activation_value)
 
-    def calculate_loss_partial_derivative_output_layer(self, loss_function_derivative_function):
-        self._loss_partial_derivative = loss_function_derivative_function(self._activation_value)
+    def calculate_loss_partial_derivative_output_layer(self, loss_function_derivative_function, expected_result):
+        self._loss_partial_derivative = loss_function_derivative_function(self._activation_value, expected_result)
 
     def calculate_loss_partial_derivative_hidden_layer(self, prev_layer, neuron_index):
         total = 0
@@ -116,5 +118,6 @@ class Neuron:
         return self._weights[neuron_index]
 
     def get_gradient_vector(self):
-        vector = np.array([self.loss_partial_derivative * self.activation_partial_derivative * neuron.activation_value for neuron in self._connections])
-        return np.append(vector, np.array([self.loss_partial_derivative * self.activation_partial_derivative * self.pre_activation_partial_derivative_bias]))
+        loss_times_activation = self.loss_partial_derivative * self.activation_partial_derivative
+        vector = np.array([loss_times_activation * neuron.activation_value for neuron in self._connections])
+        return np.append(vector, np.array([loss_times_activation * self.pre_activation_partial_derivative_bias]))
