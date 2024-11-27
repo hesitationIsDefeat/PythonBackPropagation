@@ -73,25 +73,36 @@ class Neuron:
     def act_func(self, activation_input):
         match self._act_func_name:
             case ActivationFunctionName.SIGMOID:
+                # Use clipping for numerical stability
+                activation_input = np.clip(activation_input, -500, 500)
                 return 1 / (1 + np.exp(-activation_input))
             case ActivationFunctionName.RELU:
                 return np.maximum(0, activation_input)
             case ActivationFunctionName.TANH:
-                return np.tanh(0, activation_input)
+                return np.tanh(activation_input)
             case _:
+                # Default to sigmoid
+                activation_input = np.clip(activation_input, -500, 500)
                 return 1 / (1 + np.exp(-activation_input))
 
 
     def act_func_derivative(self, activation_input):
         match self._act_func_name:
             case ActivationFunctionName.SIGMOID:
-                return self.act_func(activation_input) * (1 - self.act_func(activation_input))
+                # Store sigmoid result to avoid recomputation
+                activation_input = np.clip(activation_input, -500, 500)
+                sigmoid = 1 / (1 + np.exp(-activation_input))
+                return sigmoid * (1 - sigmoid)
             case ActivationFunctionName.RELU:
                 return np.where(activation_input > 0, 1, 0)
             case ActivationFunctionName.TANH:
-                return 1 - np.tanh(activation_input) ** 2
+                tanh_result = np.tanh(activation_input)
+                return 1 - tanh_result ** 2
             case _:
-                return self.act_func(activation_input) * (1 - self.act_func(activation_input))
+                # Default to sigmoid derivative
+                activation_input = np.clip(activation_input, -500, 500)
+                sigmoid = 1 / (1 + np.exp(-activation_input))
+                return sigmoid * (1 - sigmoid)
 
     def calculate_activation_value(self):
         connected_neuron_values = np.array([neuron.activation_value for neuron in self._connections])
@@ -120,4 +131,4 @@ class Neuron:
     def get_gradient_vector(self):
         loss_times_activation = self.loss_partial_derivative * self.activation_partial_derivative
         vector = np.array([loss_times_activation * neuron.activation_value for neuron in self._connections])
-        return np.append(vector, np.array([loss_times_activation * self.pre_activation_partial_derivative_bias]))
+        return np.append(vector, loss_times_activation * self.pre_activation_partial_derivative_bias)

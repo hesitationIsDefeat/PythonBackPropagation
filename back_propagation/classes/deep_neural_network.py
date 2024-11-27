@@ -8,10 +8,16 @@ from back_propagation.enums import ActivationFunctionName, LossFunctionName
 
 class DeepNeuralNetwork:
     def __init__(self, hidden_layer_info, training_data_x, training_data_y,
+                 back_propagation_learning_rate=0.01,
+                 back_propagation_aimed_loss_value=0.01,
+                 back_propagation_iteration_limit = 2000,
                  activation_function_name=ActivationFunctionName.SIGMOID,
                  loss_func_name=LossFunctionName.DIFFERENCE_SQUARE):
         self._training_data_x = training_data_x
         self._training_data_y = training_data_y
+        self._back_propagation_learning_rate = back_propagation_learning_rate
+        self._back_propagation_aimed_loss_value = back_propagation_aimed_loss_value
+        self._back_propagation_iteration_limit = back_propagation_iteration_limit
 
         input_layer_size = len(training_data_x[0])
         output_layer_size = len(training_data_y[0])
@@ -123,17 +129,18 @@ class DeepNeuralNetwork:
         loss_sum = 0.0
         for neuron, expected_value in zip(self._output_layer, expected_values):
             loss_sum += self.loss_func(neuron.activation_value, expected_value)
-        return loss_sum
+        return loss_sum / len(self._output_layer)
 
     # Adjusts the gradient vector before updating the parameters of the neurons
     def gradient_adjust_func(self):
-        learning_rate = 0.001
-        self._gradient_descend /= learning_rate
+
+        self._gradient_descend *= self._back_propagation_learning_rate
 
     # Assigns the neuron with the related portion of the gradient descend vector
     def update_neuron_parameters(self, neuron):
         starting_index = neuron.gradient_starting_index
         # print(f"Gradient descend vector is between the indices {starting_index} and {starting_index + neuron.parameter_size}")
+        self.gradient_adjust_func()
         gradient_descend_vector = self._gradient_descend[starting_index: starting_index + neuron.parameter_size]
         neuron.update_params(gradient_descend_vector)
 
@@ -154,7 +161,7 @@ class DeepNeuralNetwork:
         if self._gradient_descend is None:
             self._gradient_descend = gradient_descend_vector
         else:
-            self._gradient_descend += gradient_descend_vector
+            self._gradient_descend -= gradient_descend_vector
 
     # After the gradient descend is obtained, updates the parameters of every neuron
     def update_every_neuron_parameters(self):
@@ -174,31 +181,30 @@ class DeepNeuralNetwork:
 
     # Assuming the connections are made
     def start_back_propagation(self):
-        aimed_loss_value = 1/100
-        iteration_limit = 1000
+
         iteration_index = 0
-        while self._loss_value is None or self._loss_value > aimed_loss_value:
-            if iteration_index >= iteration_limit:
-                print(f"Reached iteration limit of {iteration_limit}, current loss value is {self._loss_value}, aimed loss value was {aimed_loss_value}")
+        while self._loss_value is None or self._loss_value > self._back_propagation_aimed_loss_value:
+
+            if iteration_index >= self._back_propagation_iteration_limit:
+                print(f"Reached iteration limit of {self._back_propagation_iteration_limit}, current loss value is {self._loss_value}, aimed loss value was {self._back_propagation_aimed_loss_value}")
                 break
-            print(f"Starting iteration {iteration_index}")
+            #print(f"Starting iteration {iteration_index}")
+            self._gradient_descend = None
+            total_loss = 0
             for training_data, expected_result in zip(self._training_data_x, self._training_data_y):
                 # print(f"Training data: {training_data}")
                 self.set_input_data(training_data)
                 # for neuron in self._input_layer:
                 #     print(neuron.activation_value)
                 self.forward_pass()
-                if self._loss_value is None:
-                    self._loss_value = self.calculate_loss_value(expected_result)
-                else:
-                    self._loss_value += self.calculate_loss_value(expected_result)
+                total_loss += self.calculate_loss_value(expected_result)
 
                 self.backward_pass(expected_result)
                 self.calculate_gradient_descend()
 
-            self._loss_value /= len(self._training_data_x)
+            self._loss_value = total_loss / len(self._training_data_x)
             self._gradient_descend /= len(self._training_data_x)
-            print(f"Current loss value is {self._loss_value}")
+            print(self._loss_value)
 
             self.update_every_neuron_parameters()
             iteration_index += 1
